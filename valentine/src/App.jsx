@@ -15,12 +15,11 @@ export default function App() {
       left: `${Math.random() * 100}vw`,
       duration: `${8 + Math.random() * 10}s`,
       delay: `${-Math.random() * 10}s`,
-      scale: `${0.7 + Math.random() * 1.1}`,
-      opacity: `${0.15 + Math.random() * 0.25}`,
+      scale: 0.7 + Math.random() * 1.1,
+      opacity: 0.15 + Math.random() * 0.25,
     }));
   }, []);
 
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const rand = (min, max) => Math.random() * (max - min) + min;
 
   const moveNoButton = () => {
@@ -28,40 +27,90 @@ export default function App() {
     const btn = noRef.current;
     if (!box || !btn) return;
 
+    const yesBtn = box.querySelector(".yes");
+    if (!yesBtn) return;
+
     const c = box.getBoundingClientRect();
     const b = btn.getBoundingClientRect();
+    const y = yesBtn.getBoundingClientRect();
 
-    const pad = 14;
-    const maxX = c.width - b.width - pad;
-    const maxY = c.height - b.height - pad;
+    // Since .no uses transform: translate(-50%, -50%),
+    // left/top are the *center* of the button.
+    const pad = 12;
+    const halfW = b.width / 2;
+    const halfH = b.height / 2;
 
-    const x = clamp(rand(pad, maxX), pad, maxX);
-    const y = clamp(rand(pad, maxY), pad, maxY);
+    const minX = pad + halfW;
+    const maxX = c.width - pad - halfW;
+    const minY = pad + halfH;
+    const maxY = c.height - pad - halfH;
 
-    // smooth because CSS transition is on .no
-    btn.style.left = `${x}px`;
-    btn.style.top = `${y}px`;
+    if (maxX <= minX || maxY <= minY) return;
+
+    // YES center in playground coords
+    const yesCx = y.left - c.left + y.width / 2;
+    const yesCy = y.top - c.top + y.height / 2;
+
+    // Minimum separation so NO never overlaps YES (plus an extra gap)
+    const gap = 18;
+    const minDist =
+      Math.max(b.width, y.width) / 2 +
+      Math.max(b.height, y.height) / 2 +
+      gap;
+
+    // Try a bunch of random spots until we find one far enough from YES
+    for (let i = 0; i < 35; i++) {
+      const x = rand(minX, maxX);
+      const yy = rand(minY, maxY);
+
+      const dx = x - yesCx;
+      const dy = yy - yesCy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist >= minDist) {
+        btn.style.left = `${x}px`;
+        btn.style.top = `${yy}px`;
+        return;
+      }
+    }
+
+    // Fallback: opposite side of YES
+    const fallbackX = yesCx < c.width / 2 ? maxX : minX;
+    const fallbackY = yesCy < c.height / 2 ? maxY : minY;
+    btn.style.left = `${fallbackX}px`;
+    btn.style.top = `${fallbackY}px`;
   };
 
   useEffect(() => {
-    // initial position inside playground
-    const box = playgroundRef.current;
-    const btn = noRef.current;
-    if (!box || !btn) return;
+    // initial position + re-place on resize/orientation changes (mobile Safari)
+    const placeNo = () => {
+      const box = playgroundRef.current;
+      const btn = noRef.current;
+      if (!box || !btn) return;
 
-    const c = box.getBoundingClientRect();
-    btn.style.left = `${Math.floor(c.width * 0.62)}px`;
-    btn.style.top = `${Math.floor(c.height * 0.58)}px`;
+      const c = box.getBoundingClientRect();
+
+      // start slightly right of center so it won't collide with YES on mobile
+      btn.style.left = `${c.width * 0.68}px`;
+      btn.style.top = `${c.height * 0.62}px`;
+
+      // ensure it never overlaps YES even after resize
+      moveNoButton();
+    };
+
+    placeNo();
+    window.addEventListener("resize", placeNo);
+    return () => window.removeEventListener("resize", placeNo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onYes = () => {
     setAccepted(true);
     setMessage("YAY. Okay now you’re officially stuck with me.");
 
-    // quick confetti burst (lightweight, no libs)
     const burst = document.createElement("div");
     burst.className = "burst";
-    burst.textContent = "💘 💞 💝 💖 💗 💓";
+    burst.textContent = "💘 💞 💝 💖 💗";
     document.body.appendChild(burst);
     setTimeout(() => burst.remove(), 2200);
   };
@@ -75,10 +124,12 @@ export default function App() {
     const b = btn.getBoundingClientRect();
     const cx = b.left + b.width / 2;
     const cy = b.top + b.height / 2;
+
     const dx = e.clientX - cx;
     const dy = e.clientY - cy;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
+    // More forgiving on mobile
     if (dist < 160) moveNoButton();
   };
 
@@ -130,9 +181,13 @@ export default function App() {
         </div>
 
         <div className="hint">Tip: the “No” button is… shy.</div>
-        <div className="result" aria-live="polite">{message}</div>
+        <div className="result" aria-live="polite">
+          {message}
+        </div>
 
-        <div className="footer">Made with questionable engineering and good intentions.</div>
+        <div className="footer">
+          Made with questionable engineering and good intentions.
+        </div>
       </main>
     </div>
   );
