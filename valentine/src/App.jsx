@@ -110,7 +110,7 @@ export default function App() {
   
   const onYes = () => {
     setAccepted(true);
-    setMessage("YAY. Okay now you’re ofsficially stuck with me.");
+    setMessage("YAY. Okay now you’re officially stuck with me.");
 
     const burst = document.createElement("div");
     burst.className = "burst";
