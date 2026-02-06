@@ -82,28 +82,34 @@ export default function App() {
   };
 
   useEffect(() => {
-    // initial position + re-place on resize/orientation changes (mobile Safari)
     const placeNo = () => {
       const box = playgroundRef.current;
       const btn = noRef.current;
       if (!box || !btn) return;
-
+  
+      const yesBtn = box.querySelector(".yes");
+      if (!yesBtn) return;
+  
       const c = box.getBoundingClientRect();
-
-      // start slightly right of center so it won't collide with YES on mobile
+      const y = yesBtn.getBoundingClientRect();
+  
+      // YES center inside playground
+      const yesCy = y.top - c.top + y.height / 2;
+  
+      // Place NO at same vertical level, but to the right
       btn.style.left = `${c.width * 0.68}px`;
-      btn.style.top = `${c.height * 0.62}px`;
-
-      // ensure it never overlaps YES even after resize
+      btn.style.top = `${yesCy}px`;
+  
+      // Safety: ensure no overlap
       moveNoButton();
     };
-
+  
     placeNo();
     window.addEventListener("resize", placeNo);
     return () => window.removeEventListener("resize", placeNo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
+  
   const onYes = () => {
     setAccepted(true);
     setMessage("YAY. Okay now you’re officially stuck with me.");
