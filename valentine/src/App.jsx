@@ -84,8 +84,8 @@ export default function App() {
   useEffect(() => {
     const placeNo = () => {
       const box = playgroundRef.current;
-      const btn = noRef.current;
-      if (!box || !btn) return;
+      const noBtn = noRef.current;
+      if (!box || !noBtn) return;
   
       const yesBtn = box.querySelector(".yes");
       if (!yesBtn) return;
@@ -93,26 +93,24 @@ export default function App() {
       const c = box.getBoundingClientRect();
       const y = yesBtn.getBoundingClientRect();
   
-      // YES center inside playground
-      const yesCy = y.top - c.top + y.height / 2;
+      // Exact YES center inside playground
+      const yesCenterY = (y.top - c.top) + y.height / 2;
   
-      // Place NO at same vertical level, but to the right
-      btn.style.left = `${c.width * 0.68}px`;
-      btn.style.top = `${yesCy}px`;
-  
-      // Safety: ensure no overlap
-      moveNoButton();
+      // Place NO same vertical level
+      noBtn.style.left = `${c.width * 0.68}px`;
+      noBtn.style.top = `${yesCenterY}px`;
     };
   
-    placeNo();
+    // Delay a tick so layout fully settles (important on mobile)
+    setTimeout(placeNo, 50);
+  
     window.addEventListener("resize", placeNo);
     return () => window.removeEventListener("resize", placeNo);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const onYes = () => {
     setAccepted(true);
-    setMessage("YAY. Okay now you’re officially stuck with me.");
+    setMessage("YAY. Okay now you’re ofsficially stuck with me.");
 
     const burst = document.createElement("div");
     burst.className = "burst";
@@ -192,7 +190,7 @@ export default function App() {
         </div>
 
         <div className="footer">
-          Made with questionable engineering and good intentions.
+          Made with love for my Pookie.
         </div>
       </main>
     </div>
